@@ -23,17 +23,20 @@ runs:
   steps:
     - name: 'Install openVPN'
       id: install
+      shell: bash
       run: |
         sudo apt update
         sudo apt install openvpn -y
     - name: 'Connect to VPN'
       id: connect
+      shell: bash
       run: |
         echo "${{ inputs.configFile }}" > vpn.conf
         echo "${{ inputs.password }}" > vpn.pass
         sudo openvpn --config vpn.conf --auth-user-pass vpn.pass --daemon --log vpn.log --writepid vpn.pid
     - name: 'Wait for VPN connection'
       id: wait
+      shell: bash
       run: |
         start=$EPOCHSECONDS
         timeout=10
