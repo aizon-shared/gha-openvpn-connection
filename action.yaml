@@ -1,0 +1,50 @@
+name: 'Connect openVPN'
+
+description: 'Connect to aizon VPN using openVPN'
+
+inputs:
+  configFile:
+    description: 'Client VPN endpoint configuration file content'
+    required: true
+  password:
+    description: 'Client VPN password'
+    required: true
+
+outputs:
+  PID:
+    description: 'pid of the openVPN process'
+    value: ${{ steps.connect.outputs.PID }}
+  CONNECTED:
+    description: 'Whether the connection was successful'
+    value: ${{ steps.wait.outputs.CONNECTED }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 'Install openVPN'
+      id: install
+      run: |
+        sudo apt update
+        sudo apt install openvpn -y
+    - name: 'Connect to VPN'
+      id: connect
+      run: |
+        echo "${{ inputs.configFile }}" > vpn.conf
+        echo "${{ inputs.password }}" > vpn.pass
+        sudo openvpn --config vpn.conf --auth-user-pass vpn.pass --daemon --log vpn.log --writepid vpn.pid
+    - name: 'Wait for VPN connection'
+      id: wait
+      run: |
+        start=$EPOCHSECONDS
+        timeout=10
+        while ((EPOCHSECONDS-start < timeout)); do
+          if grep -q 'Initialization Sequence Completed' vpn.log
+          then
+            echo "CONNECTED=true" >> "$GITHUB_OUTPUT"
+            break
+          else
+            echo "CONNECTED=false" >> "$GITHUB_OUTPUT"
+          fi
+          sleep .5
+        done
+        echo "PID=$(cat vpn.pid)" >> "$GITHUB_OUTPUT"
