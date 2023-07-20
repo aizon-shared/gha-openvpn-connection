@@ -1,0 +1,31 @@
+name: "Disconnect OpenVPN"
+author: "Aizon.ai"
+description: "Disconnect OpenVPN"
+
+inputs:
+  pid:
+    description: "PID of the openVPN process to kill"
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Kill OpenVPN process"
+      id: disconnect
+      shell: bash
+      run: |
+        pid=$(pidof openvpn)
+        if [ -n "$pid" ]; then
+          if [ -n "${{ inputs.pid }}" ]; then
+            if [ "$pid" == "${{ inputs.pid }}" ]; then
+              echo "Killing process ${{ inputs.pid }}"
+              sudo kill ${{ inputs.pid }}
+            fi
+          else
+            echo "Your pid $pid is not the OpenVPN pid running in the instance"
+            echo "Killing process OpenVPN pid $pid"
+            sudo kill $pid
+          fi
+        else
+          echo "There is not any OpenVPN process running."
+        fi
