@@ -1,0 +1,67 @@
+name: "Connect openVPN"
+author: "Aizon.ai"
+description: "Connect to OpenVPN"
+
+inputs:
+  configFileContent:
+    description: "OpenVPN Configuration file content (the content of the .ovpn file)"
+    required: true
+  privateKeyPassword:
+    description: "Private key password"
+    required: true
+  timeout:
+    description: "Timeout in seconds to wait for the connection to be established"
+    required: false
+    default: "30"
+
+outputs:
+  openvpn-version:
+    description: "OpenVPN used version"
+    value: ${{ steps.install.outputs.openvpn-version }}
+  pid:
+    description: "PID of the openVPN process"
+    value: ${{ steps.connect.outputs.pid }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Install OpenVPN"
+      id: install
+      shell: bash
+      run: |
+        sudo apt install openvpn -y
+        echo "openvpn-version=$(openvpn --version | head -n 1 | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+    - name: "Connect to OpenVPN"
+      id: connect
+      shell: bash
+      run: |
+        echo "${{ inputs.configFileContent }}" > vpn.conf
+        echo "${{ inputs.privateKeyPassword }}" > vpn.pass
+        sudo openvpn --config vpn.conf --askpass vpn.pass --daemon --log vpn.log --writepid vpn.pid
+        sudo chmod a+r vpn.log
+        sudo chmod a+r vpn.pid
+        echo "pid=$(cat vpn.pid)" >> "$GITHUB_OUTPUT"
+
+    - name: "Wait for connection"
+      id: wait
+      shell: bash
+      run: |
+        start=$EPOCHSECONDS
+        while (( $EPOCHSECONDS - start < ${{ inputs.timeout }})); do
+          if grep -q 'Initialization Sequence Completed' vpn.log
+          then
+            break
+          fi
+          sleep .5
+        done
+
+        cat vpn.log
+        if grep -q 'Initialization Sequence Completed' vpn.log
+        then
+          echo "VPN connected"
+          exit 0
+        else
+          echo "VPN connection timeout"
+          exit 1
+        fi
