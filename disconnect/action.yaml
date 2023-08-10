@@ -20,10 +20,12 @@ runs:
             if [ "$pid" == "${{ inputs.pid }}" ]; then
               echo "Killing process ${{ inputs.pid }}"
               sudo kill ${{ inputs.pid }}
+            else
+              echo "pid (${{ inputs.pid }}) provided in inputs does not match with the running OpenVPN process ($pid).
+              exit 1
             fi
           else
-            echo "Your pid $pid is not the OpenVPN pid running in the instance"
-            echo "Killing process OpenVPN pid $pid"
+            echo "No pid provided in inputs. Killing process OpenVPN pid $pid"
             sudo kill $pid
           fi
         else
