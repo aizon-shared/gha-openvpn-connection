@@ -21,7 +21,7 @@ runs:
               echo "Killing process ${{ inputs.pid }}"
               sudo kill ${{ inputs.pid }}
             else
-              echo "pid (${{ inputs.pid }}) provided in inputs does not match with the running OpenVPN process ($pid).
+              echo "pid (${{ inputs.pid }}) provided in inputs does not match with the running OpenVPN process ($pid)."
               exit 1
             fi
           else
