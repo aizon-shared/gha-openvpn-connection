@@ -1,0 +1,2 @@
+/.github/CODEOWNERS @aizon-shared/security
+/.github/workflows/* @aizon-shared/security
